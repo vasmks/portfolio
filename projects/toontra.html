@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <title>TOONTRA: Webtoon Localization System</title>
+  <link rel="stylesheet" href="../assets/css/toontra.css">
+</head>
+<body>
+  <a class="skip-link" href="#content">Skip to content</a>
+
+  <header class="hero" id="top">
+    <div class="hero-inner">
+      <a class="portfolio-link" href="../index.html">← Back to portfolio</a>
+      <p class="eyebrow">Applied AI · Webtoon Localization</p>
+      <h1>TOONTRA : Webtoon Localization System</h1>
+      <p class="lede">
+        Webtoon localization was the largest project I worked on at my previous company. I worked on it for about two years, during which the models changed several times. I designed the pipeline so individual components could be replaced without rebuilding the rest of the system. This case study describes the problems I worked on, the approaches I tested, and the resulting architecture.
+      </p>
+      <div class="hero-tags" aria-label="Project focus">
+        <span>Computer Vision</span>
+        <span>OCR</span>
+        <span>NLP</span>
+        <span>Generative AI</span>
+        <span>Modular localization pipeline</span>
+      </div>
+      <div class="hero-meta" aria-label="Project details">
+        <div><strong>Official Title</strong>AI Team Lead</div>
+        <div><strong>Project Role</strong>AI Researcher / Engineer</div>
+        <div><strong>Focus</strong>Computer Vision, OCR, NLP, Generative AI</div>
+        <div><strong>System</strong>End-to-end modular webtoon localization pipeline</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="toc" aria-label="Case study contents">
+      <strong>Contents</strong>
+      <nav>
+        <a href="#overview">Overview</a>
+        <a href="#detection">Text and speech bubble detection</a>
+        <a href="#inpainting">Text removal and inpainting</a>
+        <a href="#recognition">Text detection and recognition</a>
+        <a href="#font-reinsertion">Font matching and text reinsertion</a>
+        <a href="#translation">Translation</a>
+        <a href="#enhancement">Image enhancement</a>
+        <a href="#limitations">Limitations and future work</a>
+      </nav>
+    </aside>
+
+    <main id="content">
+      <section id="overview">
+        <h2>01 · Overview</h2>
+
+        <div class="implementation-note">
+          <strong>About the implementation</strong>
+          <p>
+            I plan to publish an early research version of TOONTRA that I developed while exploring the initial pipeline. This version is separate from the later production codebase and does not represent the final system used by the company. The production implementation belongs to my former employer and will not be included. The planned release will also exclude internal datasets, trained production weights, deployment infrastructure, and other company-owned assets.
+          </p>
+          <p>
+            The images and video included in this case study are selected examples from datasets I constructed during the research, together with representative model outputs. I reduced their resolution and removed their embedded file metadata. No customer information or detailed production parameters are included.
+          </p>
+        </div>
+
+        <h3>My Role</h3>
+
+        <p>
+          My official title was AI Team Lead. TOONTRA was my primary project for about two years, and my day-to-day work focused on AI research and engineering. Two interns contributed during the early stage. After their internships ended, I continued as the project’s only AI researcher for most of its development.
+        </p>
+
+        <p>
+          My work covered the modular architecture, dataset construction, model training and evaluation, and the preprocessing and post-processing algorithms used throughout the pipeline. Backend and frontend developers built the application and integrated the AI pipeline into the system used by the artists.
+        </p>
+
+        <h3>Webtoon Localization</h3>
+
+        <p>
+          TOONTRA covered the full webtoon localization workflow, from detecting the original text to placing the English translation back into the artwork. The project included:
+        </p>
+
+        <ul>
+          <li>Speech bubble detection</li>
+          <li>Text detection and OCR</li>
+          <li>Machine translation</li>
+          <li>Speech bubble segmentation</li>
+          <li>Text inpainting</li>
+          <li>Font matching</li>
+          <li>Text reinsertion and layout</li>
+          <li>Image enhancement</li>
+        </ul>
+
+        <p>
+          These parts depended on one another. If the detector missed a text region, it was never translated. If OCR recognized the text incorrectly, the translation model received the wrong input. Even a correct translation could look out of place if the font or layout did not match the artwork.
+        </p>
+
+        <p>
+          The final quality of the localized webtoon depended on the performance of each stage and on how reliably information passed from one stage to the next.
+        </p>
+
+        <h3>Limitations of the Existing System</h3>
+
+        <p>
+          When I joined the company, there was already an internal localization tool. It worked, but artists still had to correct a significant amount of the output before publication.
+        </p>
+
+        <p>
+          The existing tool had four main limitations:
+        </p>
+
+        <ul>
+          <li>Speech bubbles were detected with assumptions that worked mainly for simple white bubbles.</li>
+          <li>Text regions could be grouped in the wrong reading order.</li>
+          <li>Text removal relied on white ellipses, which damaged non-white bubble backgrounds.</li>
+          <li>Different parts of the pipeline were tightly connected, making experiments and replacements harder than they needed to be.</li>
+        </ul>
+
+        <p>
+          I started by reorganizing the pipeline into separate modules with consistent inputs and outputs. This made it easier to improve or replace individual parts as the project developed.
+        </p>
+
+        <h3>Modular Architecture</h3>
+
+        <p>
+          I separated each major stage and defined clear inputs and outputs, allowing its implementation to change without affecting the rest of the pipeline. The detector did not need to know how OCR worked, and OCR did not depend on the translation backend.
+        </p>
+
+        <p>
+          This became useful as the project developed. I could evaluate newer object detectors, introduce diffusion-based inpainting, and later add LLM-based translation without redesigning the entire application.
+        </p>
+
+        <figure class="portrait">
+          <img src="../assets/images/toontra/toontra_diagram.png" alt="TOONTRA pipeline diagram: Webtoon image input splits into bubble detection and text detection, followed by OCR, translation, font matching and inpainting, reinsertion, enhancement, and localized output." width="1104" height="2265" loading="lazy" decoding="async">
+          <figcaption>Overall TOONTRA pipeline.</figcaption>
+        </figure>
+
+        <figure>
+          <img src="../assets/images/toontra/toontra_library.png" alt="The initial research version of TOONTRA library usage example" width="1180" height="642" loading="lazy" decoding="async">
+          <figcaption>
+            The initial research version of TOONTRA exposed each stage as a separate module, allowing different components to be selected and tested.
+          </figcaption>
+        </figure>
+
+        <p>
+          In TOONTRA v2, I kept the pipeline modular internally but simplified how it was used. A single call to <code>toontra.process(image_paths)</code> accepted an array of image paths and returned the images with the original text removed, the translated text, text information, and bounding-box coordinates.
+        </p>
+      </section>
+
+      <section id="detection">
+        <h2>02 · Text and Speech Bubble Detection</h2>
+
+        <h3>Speech Bubble Detection</h3>
+
+        <p>
+          For TOONTRA v1, I used YOLOv7 to detect speech bubbles. It provided enough accuracy for the production workflow, so I did not see much value in replacing it with a newer detector just to gain a small improvement in benchmark results.
+        </p>
+
+        <p>
+          Instead, I focused on data preparation, processing very tall webtoon images, and handling duplicate detections. I also kept the detector backend replaceable so that other models could be evaluated without changing the rest of the pipeline.
+        </p>
+
+        <h3>Dataset Preparation</h3>
+
+        <p>
+          The speech bubble dataset contained <strong>11,422 annotated speech bubbles</strong> collected from production webtoons and older internal material. A large part of the dataset came from three webtoons I worked with during development:
+          <a href="https://page.kakao.com/content/61959401/" target="_blank" rel="noopener noreferrer"><i>Miracle Doctor</i> (기적의 물리치료사)</a>,
+          <a href="https://page.kakao.com/content/63025860/" target="_blank" rel="noopener noreferrer"><i>빌어먹을 마검들</i></a>,
+          and
+          <a href="https://page.kakao.com/content/62757644/" target="_blank" rel="noopener noreferrer"><i>나의 수컷 강아지</i></a>.
+        </p>
+
+        <p>
+          Because the original production material was often available as layered PSD files, bubble coordinates could be recovered from the layer geometry for a large part of the dataset. This was much faster and more consistent than drawing every bounding box manually. In some cases, however, speech-bubble layers covered the entire image rather than tightly enclosing the bubble itself. Such samples were either excluded from the dataset or, when possible, the corresponding webtoon artists were asked to provide PSD files with tighter layer boundaries.
+        </p>
+
+        <figure>
+          <img src="../assets/images/toontra/speech_bubble_types.png" alt="Examples of speech bubble diversity in the training dataset" width="1536" height="1536" loading="lazy" decoding="async">
+          <figcaption>Different speech bubble styles represented in the dataset.</figcaption>
+        </figure>
+
+        <figure>
+          <img src="../assets/images/toontra/speech_bubble_coordinates.png" alt="Speech bubble bounding box coordinates extracted from PSD layer data" width="1578" height="1183" loading="lazy" decoding="async">
+          <figcaption>Bubble coordinates derived from PSD layer geometry.</figcaption>
+        </figure>
+
+        <h3>Processing Long Webtoon Images</h3>
+
+        <p>
+          Webtoon episodes were much taller than the detector input, so I divided each episode into overlapping tiles before running detection. My initial approach used a smaller overlap, merged the detections from all tiles, and applied non-maximum suppression (NMS) to remove duplicates.
+        </p>
+
+        <p>
+          This worked reasonably well, but some duplicates remained because neighboring tiles could produce slightly different bounding boxes for the same speech bubble.
+        </p>
+
+        <h3>Tile Assignment</h3>
+
+        <p>
+          For the revised approach, I increased the overlap between neighboring tiles to 50% and assigned a non-overlapping ownership region to the central part of each tile. The detector still processed the complete tile, but a bounding box was kept only if its center fell within that tile’s ownership region. For the first and last tiles, the ownership region extended to the episode boundary, so no part of the image was left unassigned.
+        </p>
+
+        <p>
+          In my tests, smaller overlaps did not provide enough shared image area. When a speech bubble was partially cut by a tile boundary, the detector sometimes returned a box with a different size or position. These differences made cross-tile NMS unreliable because detections of the same bubble did not always overlap enough to be treated as duplicates.
+        </p>
+
+        <p>
+          With 50% overlap, a bubble near the edge of one tile appeared closer to the center of a neighboring tile. The detection from the edge region could therefore be discarded, while the neighboring tile retained the detection made with a more complete view of the bubble.
+        </p>
+
+        <p>
+          Before using this rule, I compared detections of the same bubble after mapping them to episode-level coordinates. The bounding boxes did not always match exactly, but detections made away from the tile edges usually had similar center coordinates. I therefore used the center coordinate to determine which tile could keep the detection instead of matching boxes across neighboring tiles.
+        </p>
+
+        <p>
+          I tested the rule on the duplicate cases I had identified during development. With 50% overlap and center-based ownership, it removed all the cross-tile duplicates I had observed. With smaller overlaps and no ownership filtering, every configuration I tested still left cross-tile duplicates.
+        </p>
+
+        <p>
+          The ownership filter was applied to each tile before its results were merged. Detections outside the tile’s ownership region were discarded, and the remaining boxes were mapped to episode-level coordinates and combined directly. This removed the need for a separate cross-tile global NMS step and reduced the amount of post-processing required.
+        </p>
+
+        <figure>
+          <img src="../assets/images/toontra/tile_assignment_diagram.png" alt="Tile Assignment algorithm with overlapping tiles" width="2280" height="1950" loading="lazy" decoding="async">
+          <figcaption>Tile Assignment Algorithm.</figcaption>
+        </figure>
+
+        <h3>Text Outside Speech Bubbles</h3>
+
+        <p>
+          Not all text in a webtoon appears inside speech bubbles. Narration, signs, text shown on screens, and sound effects can appear directly on the artwork. I therefore used a separate scene-text detection stage for text both inside and outside speech bubbles. I initially used CRAFT and later tested DBNet as an alternative.
+        </p>
+
+        <figure>
+          <img src="../assets/images/toontra/no_speech_bubble_text.png" alt="Examples of text outside speech bubbles" width="1536" height="1536" loading="lazy" decoding="async">
+          <figcaption>Examples of text that appears outside speech bubbles.</figcaption>
+        </figure>
+
+        <h3>Onomatopoeia Replacement</h3>
+
+        <p>
+          Onomatopoeic text required a different approach from regular dialogue. I initially tried to generate English replacements in a similar visual style. Some looked reasonable on their own, but once inserted into a panel, they often did not match the surrounding artwork. Some outputs also contained distorted or difficult-to-read lettering.
+        </p>
+
+        <p>
+          I changed to a sticker-based approach. The system detected and recognized the original text, mapped it to a predefined sound-effect label, and removed it from the image. It then suggested a corresponding translated sticker and placed it inside the detected bounding box. The artist could resize or reposition the sticker, select a different one, or leave the area empty.
+        </p>
+
+        <p>
+          While working with the production team, I noticed that artists often reused existing templates for common sound effects instead of drawing each one from scratch. I applied the same idea in TOONTRA. In the cases I tested, the sticker library produced more consistent results than generated replacements while leaving the final choice to the artist.
+        </p>
+
+        <figure>
+          <img src="../assets/images/toontra/onomatopoeia_example.png" alt="Example of onomatopoeic words processing" width="1416" height="1390" loading="lazy" decoding="async">
+          <figcaption>Example of onomatopoeia processing.</figcaption>
+        </figure>
+      </section>
+
+      <section id="inpainting">
+        <h2>03 · Text Removal and Inpainting</h2>
+
+        <p>
+          TOONTRA v1 used the predicted speech-bubble segmentation mask to fill the bubble interior with white. The mask followed the bubble shape more precisely than a simple ellipse, and this worked well for bubbles with plain white interiors.
+        </p>
+
+        <p>
+          The method was less reliable for bubbles containing gradients, textures, transparency, or artwork behind the text. Even when the segmentation mask was accurate, filling the bubble with white removed these details.
+        </p>
+
+        <p>
+          For TOONTRA v2, I replaced the white fill with inpainting. Instead of assuming that the bubble interior was white, the inpainting model reconstructed the removed region using the surrounding image as context.
+        </p>
+
+        <figure>
+          <img src="../assets/images/toontra/failed_ellipse_whiteout_examples.png" alt="Examples of failed ellipse whiteout masking" width="1216" height="865" loading="lazy" decoding="async">
+          <figcaption>White ellipse masking can remove the text, but it also destroys parts of the original artwork.</figcaption>
+        </figure>
+
+        <h3>Segmentation and Inpainting</h3>
+
+        <p>
+          For speech-bubble segmentation, I compared U-Net, DeepLabV3+, SegFormer, and MA-Net on the same dataset. MA-Net achieved the highest segmentation accuracy among the models I tested, so I selected it for the final pipeline.
+        </p>
+
+        <p>
+          Stable Diffusion reconstructed the detected text region using the surrounding image as context. During post-processing, I used the predicted bubble mask to restrict the result to the bubble interior, clean up pixels along its boundary, and ensure that the rest of the image remained unchanged.
+        </p>
+
+        <figure>
+          <img src="../assets/images/toontra/manet_architecture.png" alt="MANet architecture" width="3075" height="1377" loading="lazy" decoding="async">
+          <figcaption>MANet architecture used for speech bubble segmentation.</figcaption>
+        </figure>
+
+        <figure>
+          <img src="../assets/images/toontra/bubble_segmentation_example.png" alt="Speech bubble segmentation results" width="1536" height="512" loading="lazy" decoding="async">
+          <figcaption>Speech bubble segmentation results.</figcaption>
+        </figure>
+
+        <figure>
+          <img src="../assets/images/toontra/text_erase_examples.png" alt="Original image, Stable Diffusion text inpainting, and segmentation-guided result" width="1824" height="1324" loading="lazy" decoding="async">
+          <figcaption>From left: original image, inpainted image, and result after segmentation-mask post-processing.</figcaption>
+        </figure>
+
+        <p>
+          Processing time was important because a production batch could contain thousands of speech bubbles, with each bubble requiring a separate inpainting pass. More denoising steps sometimes improved the reconstructed background, but the additional processing time accumulated across the batch.
+        </p>
+
+        <p>
+          In my tests, around 10 denoising steps followed by lightweight post-processing produced acceptable results for the final localized image. Increasing the process to 50 steps improved some background details, but it took longer and still did not eliminate the need for cleanup. Because the translated text later covered much of the inpainted region, I used approximately 10 steps in the final pipeline.
+        </p>
+      </section>
+
+      <section id="recognition">
+        <h2>04 · Text Detection and Recognition</h2>
+
+        <p>
+          OCR was less reliable on webtoons than on clean document images. Fonts, text size, orientation, image quality, and backgrounds could change from one panel to another. Some fonts were also highly stylized or distorted, making individual characters difficult to recognize even when the image quality was good.
+        </p>
+
+        <p>
+          I used <strong>CRAFT</strong> to detect text regions and the <strong>Spatial Attention Residue Network (STAR-Net)</strong> to recognize the text.
+        </p>
+
+        <p>
+          A recurring recognition error was confusion between visually similar Hangul consonants, particularly <strong>ㅈ / ㅊ</strong> and <strong>ㅇ / ㅎ</strong>. These appeared to be small OCR errors, but a single incorrect consonant could change the meaning of a word and affect the translation.
+        </p>
+
+        <figure>
+          <img src="../assets/images/toontra/craft_examples.png" alt="CRAFT text detection examples on webtoon speech bubbles" width="2048" height="2048" loading="lazy" decoding="async">
+          <figcaption>CRAFT text detection examples.</figcaption>
+        </figure>
+
+        <h3>Text Recognition Dataset</h3>
+
+        <p>
+          Part of the recognition dataset came from the original PSD files. I created a simple Python tool that read the text and its position from each layer, cropped the corresponding region from the panel, and saved the image together with its label.
+        </p>
+
+        <figure>
+          <img src="../assets/images/toontra/sample_text_psd.png" alt="Sample text layer extracted from a PSD file" width="1895" height="1421" loading="lazy" decoding="async">
+          <figcaption>Text layer information extracted from a PSD file.</figcaption>
+        </figure>
+
+        <p>
+          The extracted image-and-text pairs still needed preprocessing, filtering, and validation, but this required much less manual work than cropping and transcribing each sample individually.
+        </p>
+
+        <h3>Korean Text Dataset</h3>
+
+        <p>
+          The first synthetic dataset covered all <strong>11,172</strong> modern Hangul syllables. Although this provided complete character coverage, it gave common and extremely rare syllables the same weight. In real Korean text, syllables such as <strong>꺩, 꺪, 꺫, 꺬, 꺭, ...</strong> are almost never used.
+        </p>
+
+        <p>
+          For the second version, I collected <strong>2,350</strong> Korean sentences from several sources and used them to generate the training samples. This made common syllables appear more frequently and brought the dataset closer to the distribution of real Korean text.
+        </p>
+
+        <p>
+          I also kept synthetic samples covering the full Hangul set, so rare syllables and those missing from the collected sentences were still represented in the training data.
+        </p>
+
+        <h3>Synthetic and Real Data</h3>
+
+        <p>
+          I built a synthetic text generator using <strong>78</strong> Korean fonts. It varied the font, color, orientation, distortion, background, and noise, which allowed me to create many labeled samples without manual annotation.
+        </p>
+
+        <figure>
+          <img src="../assets/images/toontra/synthetic_examples.png" alt="Synthetic OCR dataset samples" width="1024" height="512" loading="lazy" decoding="async">
+          <figcaption>Synthetic OCR dataset samples.</figcaption>
+        </figure>
+
+        <p>
+          However, models trained only on synthetic data performed worse on actual webtoon images. I therefore added the samples extracted from PSD files to the training set. These samples helped the model adapt to the fonts, backgrounds, and image quality found in real webtoons.
+        </p>
+      </section>
+
+      <section id="font-reinsertion">
+        <h2>05 · Font Matching and Text Reinsertion</h2>
+
+        <h3>Font Matching</h3>
+
+        <p>
+          Font choice affected how well the inserted text matched the original artwork. When the replacement font was very different from the original, the text looked out of place even when the translation was correct.
+        </p>
+
+        <p>
+          I initially treated this as an exact font-classification problem and trained a model to identify the original Korean font. The results were not reliable enough for production. Many fonts shared similar character shapes, and the differences between them often disappeared after compression, resizing, and anti-aliasing.
+        </p>
+
+        <figure>
+          <img src="../assets/images/toontra/font_confusion_matrix.png" alt="Confusion matrix for font style classification" width="1450" height="1000" loading="lazy" decoding="async">
+          <figcaption>Confusion matrix for font style classification.</figcaption>
+        </figure>
+
+        <p>
+          I therefore changed the task from identifying the exact font to classifying it into one of three general styles:
+        </p>
+
+        <ul>
+          <li><strong>Typing fonts</strong>: commonly used printed fonts.</li>
+          <li><strong>Handwritten fonts</strong>: fonts designed to resemble handwriting.</li>
+          <li><strong>Decorative fonts</strong>: more stylized fonts with distinctive shapes.</li>
+        </ul>
+
+        <p>
+          I retrained the classifier using these broader labels. Based on the predicted style, TOONTRA showed the artist several suitable fonts from the same group. The artist then selected the final font directly in the editor.
+        </p>
+
+        <h3>Text Reinsertion and Layout</h3>
+
+        <p>
+          The translated text also had to fit inside the available speech-bubble region. My first implementation handled this in Python. Given the text and target region, the algorithm tested different line breaks without splitting words, then adjusted the font size until the calculated layout fit.
+        </p>
+
+        <p>
+          The method produced suitable layouts for all text regions, but it required evaluating many combinations of line breaks and font sizes. This made it time-consuming when applied across a complete webtoon episode.
+        </p>
+
+        <p>
+          The frontend already had text-fitting logic for its speech-bubble components, so I moved the final layout step there. TOONTRA passed the translated text, selected font, and target region to the frontend, which determined the line breaks and font size. This removed the need to maintain separate layout implementations and made the calculated result consistent with what the artist saw in the editor.
+        </p>
+      </section>
+
+      <section id="translation">
+        <h2>06 · Translation</h2>
+
+        <p>
+          The first version of TOONTRA used Google Translate and Papago. For TOONTRA v2, I integrated EXAONE, which allowed us to adapt the translation model using the company’s internal localization data instead of relying entirely on external translation APIs.
+        </p>
+
+        <p>
+          Webtoon dialogue often depends on the surrounding conversation. Individual lines may be incomplete, and short expressions can change meaning depending on the speaker and situation. Instead of sending each speech bubble separately, I grouped consecutive dialogue lines from the same scene and translated them together.
+        </p>
+
+        <h3>Fine-Tuning EXAONE for Webtoon Translation</h3>
+
+        <p>
+          The fine-tuning data came from webtoons previously localized by the company’s professional translators. I aligned the original dialogue with the final translated text, so the training data reflected translations that had already been reviewed and used in production.
+        </p>
+
+        <p>
+          I fine-tuned EXAONE with LoRA, keeping the base model weights fixed and training a smaller set of additional parameters. This required less GPU memory than full fine-tuning and adapted the model to the wording and translation choices found in the company’s existing webtoon localizations.
+        </p>
+
+        <figure>
+          <img src="../assets/images/toontra/toontra_demo.png" alt="TOONTRA translation examples" width="2180" height="1682" loading="lazy" decoding="async">
+          <figcaption>TOONTRA translation workflow.</figcaption>
+        </figure>
+
+        <figure>
+          <img src="../assets/images/toontra/translation_examples.png" alt="Translation engine comparison" width="1504" height="564" loading="lazy" decoding="async">
+          <figcaption>Comparison of translation outputs.</figcaption>
+        </figure>
+
+        <h3>Translation Context Design</h3>
+
+        <p>
+          A source sentence alone does not always contain enough information to choose the correct translation. Korean often omits the subject, leaving it to be inferred from the surrounding dialogue or scene.
+        </p>
+
+        <pre>Source:
+문을 열었다.
+거기 서 있었다.
+
+Google:
+"I opened the door.
+They were standing there."
+
+Papago:
+“The door opened.
+I was standing there.”
+
+DeepL:
+“The door opened.
+He was standing there.”
+
+Fine-tuned EXAONE:
+“The door opened.
+Someone was standing there.”</pre>
+
+        <p>
+          These are actual outputs recorded during development. The subject of <strong>거기 서 있었다</strong> is not stated, so depending on the scene, <i>I</i>, <i>he</i>, <i>she</i>, <i>they</i>, or <i>someone</i> could be appropriate. In this example, the fine-tuned model used the more neutral someone, but it still could not identify who was standing there from the text alone.
+        </p>
+
+        <p>
+          This example does not mean that the fine-tuned model performed better than the external translation services. It was still under development and did not consistently produce better translations. I included the example to show a limitation shared by all the tested approaches: information missing from the input could not be recovered reliably from the dialogue alone.
+        </p>
+
+        <p>
+          For the next version of the dataset, I planned to include additional context such as the speaker, listener, emotion, scene, dialogue type, and relationships between characters. This information could help the model make decisions that were not possible from the text alone.
+        </p>
+      </section>
+
+      <section id="enhancement">
+        <h2>07 · Image Enhancement</h2>
+
+        <p>
+          Image enhancement was included as an optional step after localization. The output from the main pipeline could be used without it, but the enhancement model could produce a sharper version when needed.
+        </p>
+
+        <h3>Training Dataset</h3>
+
+        <p>
+          I built the dataset from production webtoons created by the company. Their widths ranged from 1280 pixels to 2000 pixels.
+        </p>
+
+        <p>
+          For the first version of the dataset, I resized every webtoon to a width of 1280 pixels and divided it into 1280 × 1280 images, producing approximately 40,000 training samples. I later extracted overlapping 1024 × 1024 tiles without first reducing every webtoon to the same width. This preserved more detail from the wider source images and increased the dataset to approximately 80,000 tiles.
+        </p>
+
+        <p>
+          For each training pair, I augmented a 1024 × 1024 tile and used it as the high-resolution target. I resized the same tile to 256 × 256 to create the low-resolution input. The model therefore learned a 4× upscaling task.
+        </p>
+
+        <figure>
+          <img src="../assets/images/toontra/high_quality_dataset_sample.png" alt="Webtoon and donghwa dataset samples" width="960" height="960" loading="lazy" decoding="async">
+          <figcaption>Samples from the image enhancement dataset.</figcaption>
+        </figure>
+
+        <h3>Results</h3>
+
+        <p>
+          The model was trained for 4× super-resolution, but its output showed changes beyond increased resolution. In many examples, lines and edges appeared sharper, and the colors were more saturated.
+        </p>
+
+        <p>
+          Color enhancement was not part of the training objective, and I did not evaluate it separately. I therefore treated the change in color as a side effect rather than a measured improvement.
+        </p>
+
+        <figure>
+          <img src="../assets/images/toontra/enhance_examples.png" alt="Webtoon enhancement examples" width="2048" height="1024" loading="lazy" decoding="async">
+          <figcaption>Webtoon enhancement examples (before / after).</figcaption>
+        </figure>
+      </section>
+
+      <section id="limitations">
+        <p class="section-kicker">Next steps</p>
+        <h2>Limitations and Future Work</h2>
+
+        <p>
+          The translation module used surrounding dialogue as context, but it did not receive visual information from the webtoon panels. A future version could use a multimodal model with the current panel, previous panels, and their dialogue. This could provide additional context for omitted subjects, character emotions, and expressions whose meaning depends on the scene.
+        </p>
+
+        <p>
+          I would also evaluate the complete localization workflow rather than only the individual models. I would review complete localized episodes and measure the correction work required from translators and artists, such as the number of edits and the time spent per episode.
+        </p>
+      </section>
+    </main>
+  </div>
+
+  <footer class="page-footer">
+    <a href="../index.html">← Back to portfolio</a>
+    <a href="#top" aria-label="Back to top">Back to top ↑</a>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <title>Wafer Manufacturing Inspection — Portfolio Case Study</title>
+  <link rel="stylesheet" href="../assets/css/wafer.css">
+</head>
+<body>
+  <a class="skip-link" href="#content">Skip to content</a>
+
+  <header class="hero" id="top">
+    <div class="hero-inner">
+      <a class="portfolio-link" href="../index.html">← Back to portfolio</a>
+      <p class="eyebrow">Industrial Computer Vision</p>
+      <h1>Wafer Manufacturing Inspection</h1>
+
+      <p class="lede">
+        This project focused on camera-based inspection inside semiconductor manufacturing equipment. The cameras monitored wafers, chemical-dispensing nozzles, chemical flow, and visible abnormalities during processing.
+      </p>
+
+      <p class="hero-summary">
+        I worked on a series of separate inspection problems rather than one complete system. Some of the solutions were later combined into larger monitoring projects.
+      </p>
+
+      <div class="hero-tags" aria-label="Project focus">
+        <span>Computer Vision</span>
+        <span>Segmentation</span>
+        <span>Object Detection</span>
+        <span>3D Pose Estimation</span>
+        <span>Real-Time Inspection</span>
+      </div>
+
+      <div class="hero-meta" aria-label="Project details">
+        <div><strong>Role</strong>AI Engineer / Researcher</div>
+        <div><strong>Duration</strong>Approximately 2 years</div>
+        <div><strong>Camera input</strong>1920 × 1080, 30 FPS</div>
+        <div><strong>Focus</strong>Computer vision, segmentation, detection, and 3D pose estimation</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="toc" aria-label="Case study contents">
+      <strong class="toc-title">Contents</strong>
+      <nav>
+        <a href="#overview">Overview</a>
+        <a href="#cassette-inspection">Cassette Inspection</a>
+        <a href="#nozzle-monitoring">Nozzle Monitoring</a>
+        <a href="#real-time-processing">Real-Time Processing</a>
+        <a href="#role">My Role</a>
+        <a href="#outcome">Project Outcome</a>
+        <a href="#project-note">Project Note</a>
+      </nav>
+    </aside>
+
+    <main id="content">
+      <section class="case-section" id="overview">
+        <h2>01 · Overview</h2>
+
+        <p>
+          The cameras were not originally built into every machine. When the monitoring system was needed, a camera had to be attached inside the chamber. Its position could be slightly different on each machine, so the algorithms could not rely on one fixed camera setup.
+        </p>
+
+        <p>
+          The inspection scope covered wafer handling, chemical dispensing, and visible changes inside the equipment.
+        </p>
+
+        <div class="overview-visual">
+          <img src="../assets/images/wafer/overview.png" alt="Overview of camera-based inspection tasks for wafer handling, nozzle monitoring, chemical flow, and equipment conditions" width="1448" height="1086" decoding="async">
+        </div>
+
+        <p>
+          The project covered several inspection tasks related to wafer handling, chemical dispensing, and equipment condition. Depending on the task, I used AI models, conventional computer-vision algorithms, or a combination of both.
+        </p>
+
+        <p>
+          The table summarizes the inspection problems I investigated. The detailed sections below focus on cassette inspection and nozzle monitoring.
+        </p>
+
+        <div class="table-wrap" tabindex="0" role="region" aria-label="Inspection problems table">
+          <table class="inspection-table">
+            <thead>
+              <tr>
+                <th>Area</th>
+                <th>Inspection task</th>
+                <th>Inspection objective</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="area" rowspan="3">Wafer handling</td>
+                <td class="task">Cassette occupancy</td>
+                <td>Verify whether a wafer is present in each cassette slot.</td>
+              </tr>
+              <tr>
+                <td class="task">Wafer position</td>
+                <td>Verify that the wafer is positioned correctly in the cassette and inside the processing chamber.</td>
+              </tr>
+              <tr>
+                <td class="task">Wafer condition</td>
+                <td>Detect visible cracks, discoloration, and other changes in the wafer's appearance.</td>
+              </tr>
+              <tr>
+                <td class="area" rowspan="4">Process monitoring</td>
+                <td class="task">Nozzle tracking</td>
+                <td>Detect the chemical-dispensing nozzle and track its position as it moves.</td>
+              </tr>
+              <tr>
+                <td class="task">3D pose estimation</td>
+                <td>Detect visual reference points on the nozzle, estimate its 3D pose, and determine the position of each chemical outlet.</td>
+              </tr>
+              <tr>
+                <td class="task">Chemical flow</td>
+                <td>Verify that liquid is dispensed from the expected outlet and detect any residual droplets.</td>
+              </tr>
+              <tr>
+                <td class="task">Process verification</td>
+                <td>Compare the observed nozzle and chemical-flow states with the expected processing sequence.</td>
+              </tr>
+              <tr>
+                <td class="area" rowspan="2">Equipment monitoring</td>
+                <td class="task">Smoke detection</td>
+                <td>Detect visible smoke inside the processing chamber.</td>
+              </tr>
+              <tr>
+                <td class="task">Crystallization detection</td>
+                <td>Detect crystallization or deposits forming around the processing area.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="case-section" id="cassette-inspection">
+        <h2>02 · Cassette Inspection</h2>
+
+        <p>
+          One of the first tasks I worked on was checking which cassette slots contained a wafer. A cassette could hold around 20 wafers, so the system had to check each slot separately.
+        </p>
+
+        <h3>Wafer Segmentation</h3>
+
+        <p>
+          I first tried to segment the complete visible surface of each wafer. This was not reliable because the wafer behaved almost like a mirror. Depending on the lighting and viewing angle, the same surface could appear dark, bright, green, or similar to a nearby machine part.
+        </p>
+
+        <p>
+          While reviewing the camera footage, I noticed that the exposed side of the wafer produced a narrow but more consistent visual feature, largely because of the way it reflected light. I changed the segmentation target to this feature and prepared a dataset of 2,000 cassette images for it. I then trained U-Net-style segmentation models, using the lighting variation already present in the dataset together with additional augmentation.
+        </p>
+
+        <figure>
+          <img src="../assets/images/wafer/cassette_samples.png" alt="Cassette camera samples showing variations in wafer appearance under different lighting conditions and reflections" width="1536" height="1024" loading="lazy" decoding="async">
+          <figcaption>
+            Examples of wafer surfaces under different lighting conditions and reflections.
+          </figcaption>
+        </figure>
+
+        <h3>Cassette Calibration and Wafer Verification</h3>
+
+        <p>
+          When a camera was installed, the first run estimated the position of the cassette in the frame. This provided a reference for the expected position of each cassette slot.
+        </p>
+
+        <figure>
+          <img src="../assets/images/wafer/cassette_calibration.png" alt="Cassette position calibration overlaid on the camera frame" width="2700" height="1080" loading="lazy" decoding="async">
+          <figcaption>Cassette position estimated during the initial calibration. The detected slot geometry is overlaid on the original camera frame.</figcaption>
+        </figure>
+
+        <p>
+          For subsequent frames, the system segmented the visible wafer sides and aligned the result with the calibrated slot positions. Post-processing converted the result into a confidence value for each slot. If the confidence passed the selected threshold, the wafer was considered present.
+        </p>
+
+        <figure>
+          <img src="../assets/images/wafer/cassette_position.png" alt="Camera input, wafer-edge segmentation, and slot-verification result" width="904" height="300" loading="lazy" decoding="async">
+          <figcaption>From left to right: camera input, wafer-edge segmentation mask, and final slot-verification result after post-processing.</figcaption>
+        </figure>
+
+        <p>
+          The thin-edge segmentation model achieved a validation Dice score of 0.93. Model inference ran at approximately 200 FPS, comfortably above the 30 FPS camera rate required for live inspection.
+        </p>
+
+        <div class="metric-grid" aria-label="Cassette inspection results">
+          <div><strong>Validation Dice</strong>0.93</div>
+          <div><strong>Model inference</strong>~200 FPS</div>
+        </div>
+
+        <p>
+          The benchmark measured model inference only under the original test configuration and did not represent the complete inspection pipeline.
+        </p>
+      </section>
+
+      <section class="case-section" id="nozzle-monitoring">
+        <h2>03 · Nozzle Monitoring</h2>
+
+        <p>
+          The nozzle had several outlets for dispensing different chemicals, so the system needed to locate each outlet as the nozzle moved.
+        </p>
+
+        <h3>Nozzle Detection and Tracking</h3>
+
+        <p>
+          I worked with more than 20 nozzle designs, each with a different shape and outlet arrangement. I trained a model to detect the nozzle heads and used tracking to follow their movement across video frames.
+        </p>
+
+        <figure>
+          <img src="../assets/images/wafer/nozzle_samples.png" alt="Examples of different chemical-dispensing nozzle designs" width="772" height="256" loading="lazy" decoding="async">
+          <figcaption>Examples of the nozzle designs included in the detection dataset.</figcaption>
+        </figure>
+
+        <p>
+          For each nozzle type, I prepared a simplified 3D reference model describing its shape and outlet arrangement. Each model stored the reference points and outlet locations for that particular nozzle design.
+        </p>
+
+        <h3>Single-Camera Pose Estimation</h3>
+
+        <p>
+          As the nozzle rotated or moved, the outlet positions changed in the image. A 2D bounding box only showed the overall nozzle location, so it could not tell us which outlet was dispensing liquid.
+        </p>
+
+        <p>
+          I developed a single-camera pose-estimation method using visual reference points detected by the AI model. The detected 2D points were matched with their corresponding points in the nozzle-specific 3D model. From these correspondences, I estimated the nozzle’s pose and projected the known outlet positions onto the camera image.
+        </p>
+
+        <p>
+          This allowed the system to keep track of the individual outlets and associate the observed liquid flow with the correct chemical line.
+        </p>
+
+        <figure class="video-figure">
+          <video controls muted loop playsinline preload="metadata">
+            <source src="../assets/video/wafer/nozzle_detection.mp4" type="video/mp4">
+            Your browser does not support embedded video.
+          </video>
+          <figcaption>
+            Nozzle tracking, estimated pose, and projected outlet positions on the camera frame.
+          </figcaption>
+        </figure>
+
+        <h3>Chemical-Flow Verification</h3>
+
+        <p>
+          After locating the outlets, I used image-processing algorithms to examine the small region below each expected position. The system could check whether liquid was present and whether it came from the correct outlet.
+        </p>
+
+        <p>
+          I also developed a method for detecting residual droplets. This was used to check the suck-back step, during which the remaining liquid should be pulled back into the nozzle after dispensing.
+        </p>
+
+        <p class="pipeline">Nozzle detection → Tracking → Reference-point detection → 3D pose estimation → Outlet localization → Flow verification</p>
+      </section>
+
+      <section class="case-section" id="real-time-processing">
+        <h2>04 · Real-Time Processing</h2>
+
+        <p>
+          The algorithms were designed for continuous camera monitoring. Each camera produced a 1920 × 1080 stream at 30 FPS, and several chambers could be connected to one workstation.
+        </p>
+
+        <p>
+          Processing speed was considered when selecting models and post-processing methods. Most inspection checks did not need to run on every frame, so their execution frequency could be adjusted depending on the task.
+        </p>
+
+        <p>
+          Different inspection configurations used different combinations of algorithms. In one configuration, a workstation with a single RTX 2080 Ti processed up to eight camera streams in real time. This configuration did not run every inspection function on every stream; configurations requiring more processing steps supported fewer simultaneous streams.
+        </p>
+      </section>
+
+      <section class="case-section" id="role">
+        <h2>05 · My Role in the Project</h2>
+
+        <p>
+          I was responsible for finding and testing suitable AI and computer-vision methods for each inspection task. I prepared the data, trained and evaluated the models, developed the post-processing algorithms, and built the initial inference prototypes. Other engineers handled the final Java integration.
+        </p>
+
+        <ul>
+          <li>Prepared and annotated datasets and trained segmentation and detection models.</li>
+          <li>Developed wafer-side segmentation, camera calibration, and post-processing for cassette inspection.</li>
+          <li>Developed single-camera nozzle pose estimation using AI-detected reference points and nozzle-specific 3D models, as well as algorithms for chemical-flow and residual-droplet detection.</li>
+          <li>Built and evaluated multi-camera inference prototypes and adjusted the processing frequency for different inspection configurations.</li>
+        </ul>
+      </section>
+
+      <section class="case-section" id="outcome">
+        <h2>06 · Project Outcome</h2>
+
+        <p>
+          By the time my work on the project ended, the system was being evaluated in a semiconductor manufacturing environment. Some of the inspection functions I worked on were later incorporated into a commercial monitoring product for manufacturing equipment.
+        </p>
+
+        <p>
+          This case study covers the research and prototype work I completed before the final product continued development.
+        </p>
+      </section>
+
+      <section class="case-section project-note" id="project-note">
+        <h2>Project Note</h2>
+
+        <p>
+          This project was completed as part of my previous employment. The production source code, internal datasets, customer information, trained model weights, detailed manufacturing parameters, and final deployment belong to my former employer and are not included in this portfolio.
+        </p>
+
+        <p>
+          This case study describes only the problems I worked on and the approaches I developed during the research stage. The images and video included here are anonymized, reduced-resolution examples of the research results. Customer names, equipment labels, and actual chamber footage are not included.
+        </p>
+      </section>
+    </main>
+  </div>
+
+  <footer class="page-footer">
+    <a href="../index.html">← Back to portfolio</a>
+    <a href="#top" aria-label="Back to top">Back to top ↑</a>
+  </footer>
+</body>
+</html>
