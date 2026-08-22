@@ -184,43 +184,60 @@
         <p>
           For TOONTRA v1, I used YOLOv7 to detect speech bubbles. Webtoon episodes were much taller than the detector input, so I processed them as overlapping vertical tiles. The overlap helped with bubbles near tile boundaries, but it could also produce duplicate detections when the same bubble appeared in two neighboring tiles.
         </p>
-
+        
         <p>
           To reduce duplicate detections from overlapping tiles, I used a tile-ownership rule. Each tile owned the region up to the midpoint of its overlap with the neighboring tiles, and the center of each detection determined which tile should keep it. NMS was used as an additional deduplication step. In the public reconstruction, I made this more conservative by using ownership as a preference during cross-tile deduplication rather than immediately discarding detections outside their ownership region.
         </p>
-
+        
         <p>
           The diagram below uses 50% overlap to make the ownership regions easier to see. The exact overlap was not important to the ownership rule itself.
         </p>
-
+        
+        <figure>
+          <img
+            src="../assets/images/toontra/tile_assignment_diagram.png"
+            alt="Diagram showing tile ownership regions across overlapping vertical webtoon tiles"
+            width="2280"
+            height="1950"
+            loading="lazy"
+            decoding="async"
+          >
+          <figcaption>
+            Tile assignment with 50% overlap, shown for clarity.
+          </figcaption>
+        </figure>
+        
         <p>
           For the public reconstruction, I evaluated the long-webtoon detection pipeline on 367 manually labeled speech bubbles from three webtoons. The pipeline used overlapping tiles with a tile-ownership rule to handle detections near tile boundaries. With YOLO26, detections across overlapping tiles were more consistent, so ownership had less effect on the final result. Global NMS and ownership with same-tile NMS both reached an F1 score of 0.920.
         </p>
-
+        
         <p>
           I also repeated the evaluation with YOLOv7, which was closer to the detector used in the original project, on the same independent benchmark. Ownership gave a slight improvement across precision, recall, and F1, with F1 increasing from 0.907 to 0.910. This was consistent with what I had observed in production, where the ownership rule reduced occasional duplicate detections and errors near tile boundaries. In one benchmark example, global NMS kept the slightly higher-confidence detection from the neighboring tile, but its IoU was 0.496, just below the 0.50 matching threshold. Ownership kept the detection from the correct tile instead, increasing IoU to 0.511 and recovering the bubble.
         </p>
-
+        
         <figure>
-          <img src="../assets/images/toontra/tile_assignment_diagram.png"
-        </figure>
-
-        <figure>
-          <img src="../assets/images/toontra/ownership_vs_nms.png" alt="YOLOv7 seam case comparing global NMS and tile ownership for a speech bubble near an overlapping tile boundary" width="800" height="716" loading="lazy" decoding="async">
+          <img
+            src="../assets/images/toontra/ownership_vs_nms.png"
+            alt="YOLOv7 seam case comparing global NMS and tile ownership for a speech bubble near an overlapping tile boundary"
+            width="800"
+            height="716"
+            loading="lazy"
+            decoding="async"
+          >
           <figcaption>
             <strong>A seam case from the YOLOv7 evaluation.</strong>
             Global NMS selected the slightly higher-confidence prediction, while tile ownership selected the better-localized detection from the correct tile region.
           </figcaption>
         </figure>
-
+        
         <p>
           The detected bounding box defined the region of interest (ROI) for segmentation. I expanded it slightly to avoid cutting off irregular outlines or long speech-bubble tails. In the original implementation, the box was expanded by 5% on each side. The extra area was acceptable because the segmentation model determined the actual bubble shape within the ROI.
         </p>
-
+        
         <p>
           The evaluation also included a more difficult webtoon with decorative narration boxes, irregular shapes, transparent elements, and low-contrast regions.
         </p>
-
+        
         <figure>
           <img
             src="../assets/images/toontra/ambiguous_speech_bubbles.png"
