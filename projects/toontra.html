@@ -186,7 +186,7 @@
         </p>
 
         <p>
-          To reduce duplicate detections from overlapping tiles, I applied a tile-ownership rule before non-maximum suppression (NMS). Each tile owned a central region, and a detection was kept only when the center of its bounding box fell inside that region. After mapping the surviving detections back to the full webtoon coordinates, I applied NMS to remove any remaining duplicates.
+          To reduce duplicate detections from overlapping tiles, I used a tile-ownership rule. Each tile owned the region up to the midpoint of its overlap with the neighboring tiles, and the center of each detection determined which tile should keep it. NMS was used as an additional deduplication step. In the public reconstruction, I made this more conservative by using ownership as a preference during cross-tile deduplication rather than immediately discarding detections outside their ownership region.
         </p>
 
         <p>
@@ -194,12 +194,23 @@
         </p>
 
         <p>
-          For the public reconstruction, I tested the same ownership rule with a YOLO26s detector on 367 manually annotated bubbles from three webtoons. NMS alone produced 15 false positives. Applying tile ownership before NMS reduced this to 10, while recall remained unchanged at 0.907.
+          For the public reconstruction, I evaluated the long-webtoon detection pipeline on 367 manually labeled speech bubbles from three webtoons. The pipeline used overlapping tiles with a tile-ownership rule to handle detections near tile boundaries. With YOLO26, detections across overlapping tiles were more consistent, so ownership had less effect on the final result. Global NMS and ownership with same-tile NMS both reached an F1 score of 0.920.
+        </p>
+
+        <p>
+          I also repeated the evaluation with YOLOv7, which was closer to the detector used in the original project, on the same independent benchmark. Ownership gave a slight improvement across precision, recall, and F1, with F1 increasing from 0.907 to 0.910. This was consistent with what I had observed in production, where the ownership rule reduced occasional duplicate detections and errors near tile boundaries. In one benchmark example, global NMS kept the slightly higher-confidence detection from the neighboring tile, but its IoU was 0.496, just below the 0.50 matching threshold. Ownership kept the detection from the correct tile instead, increasing IoU to 0.511 and recovering the bubble.
         </p>
 
         <figure>
-          <img src="../assets/images/toontra/tile_assignment_diagram.png" alt="Tile Assignment algorithm with overlapping tiles" width="2280" height="1950" loading="lazy" decoding="async">
-          <figcaption>Tile assignment with 50% overlap, shown for clarity.</figcaption>
+          <img src="../assets/images/toontra/tile_assignment_diagram.png"
+        </figure>
+
+        <figure>
+          <img src="../assets/images/toontra/ownership_vs_nms.png" alt="YOLOv7 seam case comparing global NMS and tile ownership for a speech bubble near an overlapping tile boundary" width="800" height="716" loading="lazy" decoding="async">
+          <figcaption>
+            <strong>A seam case from the YOLOv7 evaluation.</strong>
+            Global NMS selected the slightly higher-confidence prediction, while tile ownership selected the better-localized detection from the correct tile region.
+          </figcaption>
         </figure>
 
         <p>
