@@ -208,11 +208,11 @@
         </figure>
         
         <p>
-          For the public reconstruction, I evaluated the long-webtoon detection pipeline on 367 manually labeled speech bubbles from three webtoons. The pipeline used overlapping tiles with a tile-ownership rule to handle detections near tile boundaries. With YOLO26, detections across overlapping tiles were more consistent, so ownership had less effect on the final result. Global NMS and ownership with same-tile NMS both reached an F1 score of 0.920.
+          For the public reconstruction, I evaluated the long-webtoon detection pipeline on 367 manually labeled speech bubbles from three webtoons. With YOLO26, detections across overlapping tiles were more consistent, so ownership had less effect on the final result. Global NMS and ownership with same-tile NMS both reached an F1 score of 0.920.
         </p>
         
         <p>
-          I also repeated the evaluation with YOLOv7, which was closer to the detector used in the original project, on the same independent benchmark. Ownership gave a slight improvement across precision, recall, and F1, with F1 increasing from 0.907 to 0.910. This was consistent with what I had observed in production, where the ownership rule reduced occasional duplicate detections and errors near tile boundaries. In one benchmark example, global NMS kept the slightly higher-confidence detection from the neighboring tile, but its IoU was 0.496, just below the 0.50 matching threshold. Ownership kept the detection from the correct tile instead, increasing IoU to 0.511 and recovering the bubble.
+          I also repeated the evaluation with YOLOv7, which was closer to the detector used in the original project, on the same independent benchmark. Ownership gave a slight improvement across precision, recall, and F1, with F1 increasing from 0.907 to 0.910. This was consistent with what I had observed in production, where the ownership rule reduced occasional duplicate detections and errors near tile boundaries. One benchmark case also showed how ownership could select a better-localized detection when two neighboring tiles detected the same bubble.
         </p>
         
         <figure>
